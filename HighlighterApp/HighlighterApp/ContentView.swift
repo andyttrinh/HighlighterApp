@@ -30,6 +30,9 @@ struct ContentView: View {
                 }
                 .onDelete(perform: deleteHighlights)
             }
+            .refreshable {
+                await refreshHighlights()
+            }
             .navigationTitle("Highlights")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -76,6 +79,12 @@ struct ContentView: View {
         } catch {
             let nsError = error as NSError
             fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+        }
+    }
+
+    private func refreshHighlights() async {
+        await MainActor.run {
+            viewContext.reset()
         }
     }
 }
