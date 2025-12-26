@@ -85,6 +85,7 @@ struct ContentView: View {
     }
 
     private func refreshHighlights() async {
+        await PersistenceController.shared.processPersistentHistory()
         await MainActor.run {
             viewContext.refreshAllObjects()
             refreshToken = UUID()

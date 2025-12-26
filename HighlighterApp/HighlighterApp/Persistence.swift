@@ -8,6 +8,7 @@
 import CoreData
 
 private let appGroupID = "group.com.andytrinh.HighlighterApp"
+private let historyTokenKey = "HighlighterApp.historyToken"
 
 struct PersistenceController {
     static let shared = PersistenceController()
@@ -84,5 +85,53 @@ struct PersistenceController {
         for path in files {
             try? fm.removeItem(atPath: path)
         }
+    }
+
+    func processPersistentHistory() async {
+        let container = container
+        let viewContext = container.viewContext
+        let token = loadHistoryToken()
+
+        await withCheckedContinuation { continuation in
+            container.performBackgroundTask { context in
+                context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+                let request = NSPersistentHistoryChangeRequest.fetchHistory(after: token)
+                do {
+                    let result = try context.execute(request) as? NSPersistentHistoryResult
+                    let transactions = result?.result as? [NSPersistentHistoryTransaction] ?? []
+                    if let lastToken = transactions.last?.token {
+                        self.saveHistoryToken(lastToken)
+                    }
+                    for transaction in transactions {
+                        guard let userInfo = transaction.objectIDNotification().userInfo else {
+                            continue
+                        }
+                        NSManagedObjectContext.mergeChanges(
+                            fromRemoteContextSave: userInfo,
+                            into: [viewContext]
+                        )
+                    }
+                } catch {
+                    // For prototype use, ignore history failures and continue.
+                }
+                continuation.resume()
+            }
+        }
+    }
+
+    private func loadHistoryToken() -> NSPersistentHistoryToken? {
+        guard let data = UserDefaults.standard.data(forKey: historyTokenKey) else {
+            return nil
+        }
+        return try? NSKeyedUnarchiver
+            .unarchivedObject(ofClass: NSPersistentHistoryToken.self, from: data)
+    }
+
+    private func saveHistoryToken(_ token: NSPersistentHistoryToken) {
+        guard let data = try? NSKeyedArchiver
+            .archivedData(withRootObject: token, requiringSecureCoding: true) else {
+            return
+        }
+        UserDefaults.standard.set(data, forKey: historyTokenKey)
     }
 }
