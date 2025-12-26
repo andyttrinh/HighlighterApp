@@ -55,4 +55,4 @@ This project is an IOS Highlighter App. The functionality of this app is to be a
 
 ## Notes To Be Followed While Developing
 - Periodically perform git commits with informative comments while developing.
-- If necessary, create branches for developming new features and then after done merge them back to the main branch.
+- Please create new branches for developming new features and then after done merge them back to the main branch.
