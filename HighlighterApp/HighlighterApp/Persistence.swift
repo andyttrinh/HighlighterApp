@@ -37,36 +37,52 @@ struct PersistenceController {
     let container: NSPersistentContainer
 
     init(inMemory: Bool = false) {
-        container = NSPersistentContainer(name: "HighlighterApp")
+        let container = NSPersistentContainer(name: "HighlighterApp")
+        self.container = container
         let description = NSPersistentStoreDescription()
         if inMemory {
             description.url = URL(fileURLWithPath: "/dev/null")
         } else if let storeURL = PersistenceController.storeURL() {
             description.url = storeURL
         }
+        description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
+        description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
         container.persistentStoreDescriptions = [description]
         container.loadPersistentStores(completionHandler: { (storeDescription, error) in
             if let error = error as NSError? {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-
-                /*
-                 Typical reasons for an error here include:
-                 * The parent directory does not exist, cannot be created, or disallows writing.
-                 * The persistent store is not accessible, due to permissions or data protection when the device is locked.
-                 * The device is out of space.
-                 * The store could not be migrated to the current model version.
-                 Check the error message to determine what the actual problem was.
-                 */
-                fatalError("Unresolved error \(error), \(error.userInfo)")
+                if !inMemory {
+                    PersistenceController.resetPersistentStore(at: storeDescription.url)
+                    container.loadPersistentStores { _, reloadError in
+                        if let reloadError = reloadError as NSError? {
+                            fatalError("Unresolved error \(reloadError), \(reloadError.userInfo)")
+                        }
+                    }
+                } else {
+                    fatalError("Unresolved error \(error), \(error.userInfo)")
+                }
             }
         })
         container.viewContext.automaticallyMergesChangesFromParent = true
+        container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
     }
 
     private static func storeURL() -> URL? {
         FileManager.default
             .containerURL(forSecurityApplicationGroupIdentifier: appGroupID)?
             .appendingPathComponent("HighlighterApp.sqlite")
+    }
+
+    private static func resetPersistentStore(at url: URL?) {
+        guard let url else { return }
+        let fm = FileManager.default
+        let base = url.deletingPathExtension().path
+        let files = [
+            url.path,
+            base + "-shm",
+            base + "-wal"
+        ]
+        for path in files {
+            try? fm.removeItem(atPath: path)
+        }
     }
 }

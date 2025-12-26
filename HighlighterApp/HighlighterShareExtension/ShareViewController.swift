@@ -20,10 +20,17 @@ class ShareViewController: SLComposeServiceViewController {
             .appendingPathComponent("HighlighterApp.sqlite") {
             description.url = storeURL
         }
+        description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
+        description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
         container.persistentStoreDescriptions = [description]
-        container.loadPersistentStores { _, error in
+        container.loadPersistentStores { storeDescription, error in
             if let error = error as NSError? {
-                fatalError("Unresolved error \(error), \(error.userInfo)")
+                Self.resetPersistentStore(at: storeDescription.url)
+                container.loadPersistentStores { _, reloadError in
+                    if let reloadError = reloadError as NSError? {
+                        fatalError("Unresolved error \(reloadError), \(reloadError.userInfo)")
+                    }
+                }
             }
         }
         return container
@@ -101,6 +108,20 @@ class ShareViewController: SLComposeServiceViewController {
         } catch {
             let nsError = error as NSError
             fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+        }
+    }
+
+    private static func resetPersistentStore(at url: URL?) {
+        guard let url else { return }
+        let fm = FileManager.default
+        let base = url.deletingPathExtension().path
+        let files = [
+            url.path,
+            base + "-shm",
+            base + "-wal"
+        ]
+        for path in files {
+            try? fm.removeItem(atPath: path)
         }
     }
 }
