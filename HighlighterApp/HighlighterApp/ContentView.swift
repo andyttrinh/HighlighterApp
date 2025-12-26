@@ -12,6 +12,7 @@ struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @State private var activeHighlight: Highlight?
     @State private var isEditing = false
+    @State private var refreshToken = UUID()
 
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Highlight.createdAt, ascending: false)],
@@ -30,6 +31,7 @@ struct ContentView: View {
                 }
                 .onDelete(perform: deleteHighlights)
             }
+            .id(refreshToken)
             .refreshable {
                 await refreshHighlights()
             }
@@ -84,7 +86,8 @@ struct ContentView: View {
 
     private func refreshHighlights() async {
         await MainActor.run {
-            viewContext.reset()
+            viewContext.refreshAllObjects()
+            refreshToken = UUID()
         }
     }
 }
