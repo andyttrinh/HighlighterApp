@@ -1,7 +1,7 @@
 # HighlighterApp Design & Architecture Guide
 
 ## Overview
-HighlighterApp is a SwiftUI iOS app with a Share Extension that captures text from other apps and stores it locally. The main app reads the same store and displays highlights. The prototype focuses on local storage, basic editing, and manual refresh.
+HighlighterApp is a SwiftUI iOS app with a Share Extension that captures text from other apps and stores it locally. The main app reads the same store and displays highlights. The prototype focuses on local storage, basic editing, and manual refresh with Core Data history merging.
 
 ## High-Level Architecture
 - **App target**: SwiftUI app that lists and edits highlights.
@@ -36,7 +36,7 @@ This enables the extension to write and the app to read the same store.
 ## UI Layer (SwiftUI)
 Main list view:
 - `ContentView` fetches `Highlight` records and renders the list.
-- Pull‑to‑refresh calls `viewContext.reset()` to reload new data written by the extension.
+- Pull‑to‑refresh merges persistent history and refreshes objects so new highlights from the extension appear without relaunching.
 - File: `HighlighterApp/HighlighterApp/ContentView.swift`
 
 Editor:
@@ -58,7 +58,7 @@ File: `HighlighterApp/HighlighterShareExtension/ShareViewController.swift`
 
 ## Common Pitfalls
 - **Missing App Group**: Both targets must include the App Group capability.
-- **Stale data**: Use pull‑to‑refresh to reload highlights after sharing.
+- **Stale data**: Use pull‑to‑refresh to merge external changes written by the Share Extension.
 - **Model mismatch**: App and extension must use the same Core Data model.
 
 ## iOS Development Reference (Prototype Level)
