@@ -94,7 +94,7 @@ struct ContentView: View {
 }
 
 private struct HighlightRow: View {
-    let highlight: Highlight
+    @ObservedObject var highlight: Highlight
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
