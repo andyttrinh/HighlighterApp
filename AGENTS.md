@@ -1,15 +1,5 @@
 # Repository Guidelines
 
-## Project Structure & Module Organization
-
-This repository is currently empty aside from Git metadata. Establish the structure as you add code, and keep it consistent. Recommended defaults:
-- `src/` for application code
-- `tests/` for automated tests
-- `assets/` for static resources (images, fixtures, sample data)
-- `docs/` for design notes or specs
-
-If you choose a different layout, document it in this file and keep paths stable.
-
 ## Build, Test, and Development Commands
 
 No build or test commands are configured yet. When adding tooling, list the exact commands here. For example:
@@ -49,6 +39,9 @@ For pull requests, include:
 ## Security & Configuration Tips
 
 If you add secrets or environment-specific settings, store them in a `.env` file and add `.env` to `.gitignore`. Provide a `.env.example` with safe defaults.
+
+## Instruction for Working
+- For every question and feature update make sure you refer to the code base in HighlightApp directory. You should have complete knowledge of the codebase as it's changing when answering my question since this is what we will be working on. Please take the time to review everything in the HighlightApp Directory and understand the goal and how the app works.
 
 ## Initial Description
 This project is an IOS Highlighter App. The functionality of this app is to be a app that allows users to highlight lines and store them as highlights in the app. The user should be able to highlight a line from any app then click the "share" option and share the text to the highlighter app. This functionality is similar to how Instapaper works where you can share links to the app. There will be added functionality like having tags to highlights and sorting highlights, but for now we want a prototype. 
