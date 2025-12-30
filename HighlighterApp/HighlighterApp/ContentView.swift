@@ -11,7 +11,6 @@ import CoreData
 struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @State private var activeHighlight: Highlight?
-    @State private var isEditing = false
     @State private var refreshToken = UUID()
 
     @FetchRequest(
@@ -46,18 +45,15 @@ struct ContentView: View {
                     }
                 }
             }
-            .sheet(isPresented: $isEditing) {
-                if let highlight = activeHighlight {
-                    HighlightEditorView(highlight: highlight)
-                        .environment(\.managedObjectContext, viewContext)
-                }
+            .sheet(item: $activeHighlight) { highlight in
+                HighlightEditorView(highlight: highlight)
+                    .environment(\.managedObjectContext, viewContext)
             }
         }
     }
 
     private func beginEditing(_ highlight: Highlight) {
         activeHighlight = highlight
-        isEditing = true
     }
 
     private func addHighlight() {
