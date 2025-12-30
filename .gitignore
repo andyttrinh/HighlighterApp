@@ -5,6 +5,8 @@
 !*.xcodeproj/xcshareddata/
 !*.xcodeproj/project.xcworkspace/
 *.xcuserdata/
+xcuserdata/
+*.xcuserdatad/
 DerivedData/
 
 # Swift Package Manager
