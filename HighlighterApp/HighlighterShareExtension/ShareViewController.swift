@@ -6,11 +6,10 @@
 //
 
 import UIKit
-import Social
 import CoreData
 import UniformTypeIdentifiers
 
-class ShareViewController: SLComposeServiceViewController {
+class ShareViewController: UIViewController {
     private let appGroupID = "group.com.andytrinh.HighlighterApp"
     private lazy var persistentContainer: NSPersistentContainer = {
         let container = NSPersistentContainer(name: "HighlighterApp")
@@ -36,25 +35,95 @@ class ShareViewController: SLComposeServiceViewController {
         return container
     }()
 
-    override func isContentValid() -> Bool {
-        // Do validation of contentText and/or NSExtensionContext attachments here
-        return true
+    private let textView = UITextView()
+    private let tagsField = UITextField()
+    private let saveButton = UIButton(type: .system)
+    private let cancelButton = UIButton(type: .system)
+    private let statusLabel = UILabel()
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        configureUI()
+        loadSharedText()
     }
 
-    override func didSelectPost() {
-        saveSharedText {
-            self.extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
-        }
+    private func configureUI() {
+        view.backgroundColor = .systemBackground
+
+        let titleLabel = UILabel()
+        titleLabel.text = "New Highlight"
+        titleLabel.font = .preferredFont(forTextStyle: .headline)
+
+        textView.font = .preferredFont(forTextStyle: .body)
+        textView.backgroundColor = UIColor.secondarySystemBackground
+        textView.layer.cornerRadius = 8
+        textView.layer.masksToBounds = true
+
+        tagsField.font = .preferredFont(forTextStyle: .body)
+        tagsField.placeholder = "comma,separated,tags"
+        tagsField.borderStyle = .roundedRect
+        tagsField.autocapitalizationType = .none
+        tagsField.autocorrectionType = .no
+
+        statusLabel.font = .preferredFont(forTextStyle: .caption1)
+        statusLabel.textColor = .secondaryLabel
+        statusLabel.text = "Loading shared text..."
+
+        saveButton.setTitle("Save", for: .normal)
+        saveButton.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
+
+        cancelButton.setTitle("Cancel", for: .normal)
+        cancelButton.addTarget(self, action: #selector(cancelTapped), for: .touchUpInside)
+
+        let buttonStack = UIStackView(arrangedSubviews: [cancelButton, UIView(), saveButton])
+        buttonStack.axis = .horizontal
+        buttonStack.alignment = .center
+
+        let stack = UIStackView(arrangedSubviews: [
+            titleLabel,
+            textView,
+            tagsField,
+            statusLabel,
+            buttonStack
+        ])
+        stack.axis = .vertical
+        stack.spacing = 12
+
+        let scrollView = UIScrollView()
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(scrollView)
+
+        let contentView = UIView()
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.addSubview(contentView)
+
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            scrollView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+
+            contentView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+            contentView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+            contentView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+            contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
+
+            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
+            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -16),
+
+            textView.heightAnchor.constraint(greaterThanOrEqualToConstant: 140)
+        ])
     }
 
-    override func configurationItems() -> [Any]! {
-        // To add configuration options via table cells at the bottom of the sheet, return an array of SLComposeSheetConfigurationItem here.
-        return []
-    }
-
-    private func saveSharedText(completion: @escaping () -> Void) {
+    private func loadSharedText() {
         guard let inputItems = extensionContext?.inputItems as? [NSExtensionItem] else {
-            completion()
+            statusLabel.text = "No shared content."
             return
         }
 
@@ -87,19 +156,33 @@ class ShareViewController: SLComposeServiceViewController {
         }
 
         group.notify(queue: .main) {
-            if let text = capturedText?.trimmingCharacters(in: .whitespacesAndNewlines),
-               !text.isEmpty {
-                self.insertHighlight(text: text)
-            }
-            completion()
+            let trimmed = capturedText?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            self.textView.text = trimmed
+            self.statusLabel.text = trimmed.isEmpty ? "No text found." : "Ready to save."
         }
     }
 
-    private func insertHighlight(text: String) {
+    @objc private func saveTapped() {
+        let text = textView.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else {
+            statusLabel.text = "Please enter text before saving."
+            return
+        }
+
+        insertHighlight(text: text, tags: tagsField.text ?? "")
+        extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
+    }
+
+    @objc private func cancelTapped() {
+        extensionContext?.cancelRequest(withError: NSError(domain: "HighlighterApp.Share", code: 0))
+    }
+
+    private func insertHighlight(text: String, tags: String) {
         let context = persistentContainer.viewContext
         let highlight = Highlight(context: context)
         highlight.id = UUID()
         highlight.text = text
+        highlight.tags = tags.trimmingCharacters(in: .whitespacesAndNewlines)
         highlight.createdAt = Date()
         highlight.sourceApp = nil
 
